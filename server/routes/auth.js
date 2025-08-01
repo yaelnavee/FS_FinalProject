@@ -1,113 +1,81 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { users } = require('../data/users');
+const db = require('../db'); // חיבור למסד הנתונים
 
 const router = express.Router();
 
-// רישום משתמש חדש
+// 📌 רישום משתמש חדש
 router.post('/register', async (req, res) => {
   try {
-    console.log('Register request:', req.body);
     const { username, email, password, name, role = 'customer' } = req.body;
 
     // בדיקה אם המשתמש כבר קיים
-    const existingUser = users.find(user => 
-      user.username === username || user.email === email
+    const [existing] = await db.execute(
+      'SELECT * FROM users WHERE username = ? OR email = ?',
+      [username, email]
     );
-
-    if (existingUser) {
-      return res.status(400).json({ message: 'משתמש עם שם משתמש או אימייל זה כבר קיים' });
+    if (existing.length > 0) {
+      return res.status(400).json({ message: 'משתמש כבר קיים' });
     }
 
     // הצפנת סיסמה
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // יצירת משתמש חדש
-    const newUser = {
-      id: users.length + 1,
-      username,
-      email,
-      password: hashedPassword,
-      role,
-      name
-    };
+    // הכנסת המשתמש למסד
+    const [result] = await db.execute(
+      'INSERT INTO users (username, email, password, name, role) VALUES (?, ?, ?, ?, ?)',
+      [username, email, hashedPassword, name, role]
+    );
 
-    users.push(newUser);
+    const userId = result.insertId;
 
     // יצירת טוקן
     const token = jwt.sign(
-      { 
-        userId: newUser.id, 
-        username: newUser.username,
-        role: newUser.role 
-      },
+      { userId, username, role },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '24h' }
     );
 
     res.status(201).json({
-      message: 'משתמש נרשם בהצלחה',
+      message: 'נרשמת בהצלחה',
       token,
-      user: {
-        id: newUser.id,
-        username: newUser.username,
-        email: newUser.email,
-        role: newUser.role,
-        name: newUser.name
-      }
+      user: { id: userId, username, email, role, name }
     });
-
   } catch (error) {
     console.error('Register error:', error);
-    res.status(500).json({ message: 'שגיאה ברישום המשתמש' });
+    res.status(500).json({ message: 'שגיאה ברישום' });
   }
 });
 
-// התחברות
+// 📌 התחברות
 router.post('/login', async (req, res) => {
   try {
-    console.log('Login request received:', req.body);
     const { username, password } = req.body;
 
-    // בדיקה שיש username ו-password
-    if (!username || !password) {
-      console.log('Missing username or password');
-      return res.status(400).json({ message: 'נדרש שם משתמש וסיסמה' });
-    }
+    // שליפת המשתמש מהמסד
+    const [rows] = await db.execute(
+      'SELECT * FROM users WHERE username = ?',
+      [username]
+    );
 
-    // חיפוש המשתמש
-    console.log('Looking for user:', username);
-    const user = users.find(u => u.username === username);
-    console.log('User found:', user ? 'Yes' : 'No');
-
-    if (!user) {
-      console.log('User not found');
+    if (rows.length === 0) {
       return res.status(400).json({ message: 'שם משתמש או סיסמה שגויים' });
     }
 
-    // בדיקת סיסמה
-    console.log('Checking password...');
+    const user = rows[0];
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    console.log('Password valid:', isPasswordValid);
-
     if (!isPasswordValid) {
-      console.log('Invalid password');
       return res.status(400).json({ message: 'שם משתמש או סיסמה שגויים' });
     }
 
     // יצירת טוקן
     const token = jwt.sign(
-      { 
-        userId: user.id, 
-        username: user.username,
-        role: user.role 
-      },
+      { userId: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '24h' }
     );
 
-    console.log('Login successful for user:', username);
     res.json({
       message: 'התחברות בהצלחה',
       token,
@@ -119,41 +87,30 @@ router.post('/login', async (req, res) => {
         name: user.name
       }
     });
-
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'שגיאה בהתחברות' });
   }
 });
 
-// אימות טוקן
-router.get('/verify', (req, res) => {
+// 📌 אימות טוקן
+router.get('/verify', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({ message: 'לא נמצא טוקן' });
-    }
+    if (!token) return res.status(401).json({ message: 'לא נמצא טוקן' });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
-    const user = users.find(u => u.id === decoded.userId);
 
-    if (!user) {
-      return res.status(401).json({ message: 'משתמש לא נמצא' });
-    }
+    const [rows] = await db.execute(
+      'SELECT id, username, email, name, role FROM users WHERE id = ?',
+      [decoded.userId]
+    );
 
-    res.json({
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        name: user.name
-      }
-    });
+    if (rows.length === 0) return res.status(404).json({ message: 'משתמש לא נמצא' });
 
+    res.json({ user: rows[0] });
   } catch (error) {
-    console.error('Token verification error:', error);
+    console.error('Verify token error:', error);
     res.status(401).json({ message: 'טוקן לא תקף' });
   }
 });

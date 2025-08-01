@@ -3,15 +3,18 @@ const { users } = require('../data/users');
 
 // Middleware לאימות טוקן
 const authenticateToken = (req, res, next) => {
+  console.log("🔐 Checking token...");
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
+    console.log("🚫 No token provided");
     return res.status(401).json({ message: 'נדרש טוקן גישה' });
   }
 
   jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret', (err, decoded) => {
     if (err) {
+      console.log("❌ Invalid token");
       return res.status(403).json({ message: 'טוקן לא תקף' });
     }
 
@@ -26,8 +29,9 @@ const authenticateToken = (req, res, next) => {
       role: user.role,
       name: user.name
     };
-    
+    console.log("✅ Token valid, user:", req.user.username);
     next();
+    
   });
 };
 

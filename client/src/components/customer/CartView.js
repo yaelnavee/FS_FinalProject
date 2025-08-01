@@ -8,26 +8,52 @@ const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCar
     notes: ''
   });
 
-  const handleCheckout = (e) => {
+  const handleCheckout = async (e) => {
     e.preventDefault();
-    
-    // כאן נוסיף בעתיד קריאה לAPI לשליחת ההזמנה
+
+    const token = localStorage.getItem('token');
+    console.log('טוקן נשלח:', token);
+    if (!token) {
+      alert('את צריכה להתחבר כדי לבצע הזמנה');
+      return;
+    }
+
     const orderData = {
-      items: cart,
-      total: totalPrice,
-      customerDetails: orderDetails,
-      orderTime: new Date().toLocaleString('he-IL')
+      items: cart.map(item => ({
+        pizza_id: item.id,
+        quantity: item.quantity
+        })),
+      total: totalPrice, // אופציונלי – בודקים גם בצד שרת
+      customerDetails: orderDetails // אופציונלי – אם את שומרת כתובת וכו'
     };
-    
-    console.log('שליחת הזמנה:', orderData);
-    alert(`ההזמנה נשלחה בהצלחה! 
-    סה"כ לתשלום: ₪${totalPrice}
-    זמן הכנה משוער: 30-40 דקות`);
-    
-    // ניקוי הסל והחזרה לתפריט
-    onClearCart();
-    setShowCheckout(false);
-    setOrderDetails({ phone: '', address: '', notes: '' });
+
+    try {
+      const response = await fetch('http://localhost:5000/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        alert(`ההזמנה נשלחה בהצלחה! מספר הזמנה: ${data.orderId}
+              סה"כ לתשלום: ₪${totalPrice}
+              זמן הכנה משוער: 30-40 דקות`); 
+        onClearCart();
+        setShowCheckout(false);
+        setOrderDetails({ phone: '', address: '', notes: '' });
+      } else {
+        const errorData = await response.json();
+        alert('שגיאה בשליחת ההזמנה: ' + errorData.message);
+      }
+    } catch (err) {
+      console.error('Order error:', err);
+      alert('הייתה שגיאה בשליחת ההזמנה');
+    }
   };
 
   if (cart.length === 0) {
