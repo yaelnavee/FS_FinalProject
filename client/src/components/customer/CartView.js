@@ -23,8 +23,8 @@ const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCar
         pizza_id: item.id,
         quantity: item.quantity
         })),
-      total: totalPrice, // אופציונלי – בודקים גם בצד שרת
-      customerDetails: orderDetails // אופציונלי – אם את שומרת כתובת וכו'
+      total: totalPrice,
+      customerDetails: orderDetails 
     };
 
     try {
@@ -41,11 +41,11 @@ const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCar
         const data = await response.json();
         
         alert(`ההזמנה נשלחה בהצלחה! מספר הזמנה: ${data.orderId}
-              סה"כ לתשלום: ₪${totalPrice}
+              סה"כ לתשלום: ₪${data.total}
               זמן הכנה משוער: 30-40 דקות`); 
         onClearCart();
         setShowCheckout(false);
-        setOrderDetails({ phone: '', address: '', notes: '' });
+        setOrderDetails(data.orderDetails);
       } else {
         const errorData = await response.json();
         alert('שגיאה בשליחת ההזמנה: ' + errorData.message);

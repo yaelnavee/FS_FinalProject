@@ -1,41 +1,38 @@
 const jwt = require('jsonwebtoken');
-const { users } = require('../data/users');
+const db = require('../db'); // db שימוש במסד הנתונים
 
-// Middleware לאימות טוקן
-const authenticateToken = (req, res, next) => {
-  console.log("🔐 Checking token...");
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    console.log("🚫 No token provided");
     return res.status(401).json({ message: 'נדרש טוקן גישה' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret', (err, decoded) => {
-    if (err) {
-      console.log("❌ Invalid token");
-      return res.status(403).json({ message: 'טוקן לא תקף' });
-    }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
 
-    const user = users.find(u => u.id === decoded.userId);
-    if (!user) {
+    // ✨ שליפת המשתמש מה־DB לפי ה־id מהטוקן
+    const [rows] = await db.execute(
+      'SELECT id, username, role, name FROM users WHERE id = ?',
+      [decoded.userId]
+    );
+
+    console.log('User from DB:', rows[0]);///////////////////////////////////////////////////////בדיקה
+
+    if (rows.length === 0) {
       return res.status(403).json({ message: 'משתמש לא נמצא' });
     }
 
-    req.user = {
-      id: user.id,
-      username: user.username,
-      role: user.role,
-      name: user.name
-    };
-    console.log("✅ Token valid, user:", req.user.username);
+    req.user = rows[0]; // 👈 שמירה ב־req.user
+
     next();
-    
-  });
+  } catch (err) {
+    console.error('Token verification failed:', err);
+    return res.status(403).json({ message: 'טוקן לא תקף' });
+  }
 };
 
-// Middleware לבדיקת הרשאות עובד
 const requireEmployee = (req, res, next) => {
   if (req.user.role !== 'employee') {
     return res.status(403).json({ message: 'נדרשת הרשאת עובד' });
@@ -43,8 +40,8 @@ const requireEmployee = (req, res, next) => {
   next();
 };
 
-// Middleware לבדיקת הרשאות לקוח
 const requireCustomer = (req, res, next) => {
+  console.log('הרול של המשתמש ב־req.user:', req.user);
   if (req.user.role !== 'customer') {
     return res.status(403).json({ message: 'נדרשת הרשאת לקוח' });
   }

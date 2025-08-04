@@ -1,37 +1,48 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const OrderManagement = () => {
-  const [orders, setOrders] = useState([
-    {
-      id: 1,
-      customerName: 'יוסי כהן',
-      items: [
-        { name: 'פיצה מרגריטה', quantity: 2, price: 45 },
-        { name: 'קולה', quantity: 1, price: 8 }
-      ],
-      total: 98,
-      status: 'pending',
-      orderTime: '14:30',
-      phone: '050-1234567'
-    },
-    {
-      id: 2,
-      customerName: 'שרה לוי',
-      items: [
-        { name: 'פיצה פפרוני', quantity: 1, price: 52 }
-      ],
-      total: 52,
-      status: 'preparing',
-      orderTime: '14:45',
-      phone: '052-9876543'
-    }
-  ]);
+  const [orders, setOrders] = useState([]);
 
-  const updateOrderStatus = (orderId, newStatus) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ));
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/api/orders/all', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+      setOrders(data);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+    }
   };
+
+    const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (res.ok) {
+        fetchOrders(); // נטען מחדש את הרשימה
+      } else {
+        console.error('שגיאה בעדכון סטטוס');
+      }
+    } catch (err) {
+      console.error('שגיאה:', err);
+    }
+  };
+
 
   const getStatusText = (status) => {
     switch(status) {

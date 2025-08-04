@@ -34,7 +34,7 @@ exports.createOrder = async (req, res) => {
       const price = pizzaRows[0].price;
 
       await conn.execute(
-        'INSERT INTO order_items (order_id, pizza_id, quantity, price) VALUES (?, ?, ?, ?)',
+        'INSERT INTO order_items (order_id, pizza_id, quantity, unit_price) VALUES (?, ?, ?, ?)',
         [orderId, item.pizza_id, item.quantity, price]
       );
     }
@@ -77,4 +77,58 @@ exports.getUserOrders = async (req, res) => {
     console.error('Get orders error:', err);
     res.status(500).json({ message: 'שגיאה בשליפת ההזמנות' });
   }
+
 };
+
+exports.getAllOrders = async (req, res) => {
+  try {
+    const [orders] = await db.execute(`
+      SELECT o.id, o.status, o.total_price AS total, o.order_time, o.phone, o.address, o.notes, 
+             u.name AS customerName
+      FROM orders o
+      JOIN users u ON o.user_id = u.id
+      ORDER BY o.order_time DESC
+    `);
+
+    const ordersWithItems = await Promise.all(
+      orders.map(async (order) => {
+        const [items] = await db.execute(`
+          SELECT oi.quantity, oi.unit_price AS price, p.name
+          FROM order_items oi
+          JOIN pizzas p ON oi.pizza_id = p.id
+          WHERE oi.order_id = ?
+        `, [order.id]);
+
+        return { ...order, items };
+      })
+    );
+
+    res.json(ordersWithItems); 
+  } catch (err) {
+    console.error('Error fetching all orders:', err);
+    res.status(500).json({ message: 'שגיאה בקבלת ההזמנות' });
+  }
+};
+
+
+exports.updateOrderStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  const allowedStatuses = ['pending', 'preparing', 'ready', 'delivered'];
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ message: 'סטטוס לא תקין' });
+  }
+
+  try {
+    await db.execute(
+      'UPDATE orders SET status = ? WHERE id = ?',
+      [status, id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({ message: 'שגיאה בעדכון סטטוס' });
+  }
+};
+

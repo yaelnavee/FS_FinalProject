@@ -1,43 +1,100 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const MenuManagement = () => {
-  const [menuItems, setMenuItems] = useState([
-    { id: 1, name: 'פיצה מרגריטה', price: 45, category: 'פיצות', available: true },
-    { id: 2, name: 'פיצה פפרוני', price: 52, category: 'פיצות', available: true },
-    { id: 3, name: 'פיצה ירקות', price: 48, category: 'פיצות', available: true },
-    { id: 4, name: 'קולה', price: 8, category: 'שתייה', available: true }
-  ]);
-
+  const [menuItems, setMenuItems] = useState([]);
   const [newItem, setNewItem] = useState({
     name: '',
     price: '',
-    category: 'פיצות'
+    category: 'פיצות',
+    description: '',
+    image_url: ''
   });
 
-  const handleAddItem = (e) => {
+  useEffect(() => {
+    fetch('http://localhost:5000/api/menu')
+      .then(res => res.json())
+      .then(data => setMenuItems(data))
+      .catch(err => console.error('שגיאה בקבלת תפריט:', err));
+  }, []);
+
+
+  const handleAddItem = async (e) => {
     e.preventDefault();
-    if (newItem.name && newItem.price) {
-      const item = {
-        id: Date.now(),
-        name: newItem.name,
-        price: parseFloat(newItem.price),
-        category: newItem.category,
-        available: true
-      };
-      setMenuItems([...menuItems, item]);
-      setNewItem({ name: '', price: '', category: 'פיצות' });
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('את צריכה להתחבר כעובדת');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/menu', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newItem)
+      });
+
+      if (response.ok) {
+        const addedItem = await response.json();
+        setMenuItems([...menuItems, addedItem]);
+        setNewItem({ name: '', price: '', category: 'פיצות', description: '', image_url: '' });
+      } else {
+        const error = await response.json();
+        alert('שגיאה בהוספה: ' + error.message);
+      }
+    } catch (err) {
+      console.error('שגיאה בהוספת פיצה:', err);
+      alert('שגיאה כללית');
     }
   };
 
-  const toggleAvailability = (id) => {
-    setMenuItems(menuItems.map(item => 
-      item.id === id ? { ...item, available: !item.available } : item
-    ));
+
+  const toggleAvailability = async (id) => {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch(`http://localhost:5000/api/menu/${id}/toggle`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (response.ok) {
+      setMenuItems(menuItems.map(item =>
+        item.id === id ? { ...item, available: !item.available } : item
+      ));
+    } else {
+      alert('שגיאה בעדכון זמינות');
+    }
+  } catch (err) {
+    console.error('שגיאה בעדכון זמינות:', err);
+    alert('שגיאה');
+  }
+};
+
+
+  const deleteItem = async (id) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/menu/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        setMenuItems(menuItems.filter(item => item.id !== id));
+      } else {
+        alert('שגיאה במחיקה');
+      }
+    } catch (err) {
+      console.error('שגיאת מחיקה:', err);
+      alert('שגיאה');
+    }
   };
 
-  const deleteItem = (id) => {
-    setMenuItems(menuItems.filter(item => item.id !== id));
-  };
 
   return (
     <div className="menu-management">
