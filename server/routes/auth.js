@@ -5,7 +5,7 @@ const db = require('../db'); // חיבור למסד הנתונים
 
 const router = express.Router();
 
-// 📌 רישום משתמש חדש
+//  רישום משתמש חדש
 router.post('/register', async (req, res) => {
   try {
     const { username, email, password, name, role = 'customer' } = req.body;
@@ -48,7 +48,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// 📌 התחברות
+//  התחברות
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -93,7 +93,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// 📌 אימות טוקן
+//  אימות טוקן
 router.get('/verify', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];

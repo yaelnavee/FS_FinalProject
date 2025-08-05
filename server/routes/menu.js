@@ -4,7 +4,7 @@ const { authenticateToken, requireEmployee } = require('../middleware/auth');
 
 const router = express.Router();
 
-// 📥 קבלת כל הפיצות
+//  קבלת כל הפיצות
 router.get('/', async (req, res) => {
   try {
     const [rows] = await db.execute('SELECT * FROM pizzas');
@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ➕ הוספת פיצה (רק לעובדים)
+// הוספת פיצה (רק לעובדים)
 router.post('/', authenticateToken, requireEmployee, async (req, res) => {
   const { name, price, description, category, image_url } = req.body;
 
@@ -32,7 +32,7 @@ router.post('/', authenticateToken, requireEmployee, async (req, res) => {
   }
 });
 
-// 🗑️ מחיקת פיצה
+//  מחיקת פיצה
 router.delete('/:id', authenticateToken, requireEmployee, async (req, res) => {
   try {
     const [result] = await db.execute('DELETE FROM pizzas WHERE id = ?', [req.params.id]);
@@ -43,7 +43,7 @@ router.delete('/:id', authenticateToken, requireEmployee, async (req, res) => {
   }
 });
 
-// 🔄 שינוי זמינות
+//  שינוי זמינות
 router.put('/:id/toggle', authenticateToken, requireEmployee, async (req, res) => {
   try {
     await db.execute(
