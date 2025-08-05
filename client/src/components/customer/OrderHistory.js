@@ -52,6 +52,7 @@ const OrderHistory = () => {
   };
 
   return (
+    // צריך להוסיף פונקציונליות להזמנת הזמנה קיימת לסל 
     <div className="order-history">
       <h3>ההזמנות שלי</h3>
       
