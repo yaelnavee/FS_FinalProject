@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
-const OrderHistory = () => {
+const OrderHistory = ({ onReorder }) => {
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchOrders();
@@ -20,6 +21,8 @@ const OrderHistory = () => {
       setOrders(data);
     } catch (err) {
       console.error('Error fetching user orders:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -28,7 +31,6 @@ const OrderHistory = () => {
       case 'pending': return 'ממתין לאישור';
       case 'preparing': return 'בהכנה';
       case 'ready': return 'מוכן למשלוח';
-      case 'on_way': return 'בדרך אליך';
       case 'delivered': return 'נמסר';
       case 'cancelled': return 'בוטל';
       default: return status;
@@ -40,19 +42,23 @@ const OrderHistory = () => {
       case 'pending': return 'status-pending';
       case 'preparing': return 'status-preparing';
       case 'ready': return 'status-ready';
-      case 'on_way': return 'status-on-way';
       case 'delivered': return 'status-delivered';
       case 'cancelled': return 'status-cancelled';
       default: return '';
     }
   };
 
-  const reorderItems = (order) => {
-    alert(`הזמנה חוזרת של הזמנה #${order.id} - סה"כ ₪${order.total}`);
+  const handleReorder = (order) => {
+    if (onReorder) {
+      onReorder(order);
+    }
   };
 
+  if (loading) {
+    return <div className="loading">טוען הזמנות...</div>;
+  }
+
   return (
-    // צריך להוסיף פונקציונליות להזמנת הזמנה קיימת לסל 
     <div className="order-history">
       <h3>ההזמנות שלי</h3>
       
@@ -64,9 +70,12 @@ const OrderHistory = () => {
       ) : (
         <div className="orders-list">
           {orders.map(order => {
-            const date = new Date(order.order_time);
+            const date = new Date(order.orderTime || order.order_time);
             const formattedDate = date.toLocaleDateString('he-IL');
-            const formattedTime = date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+            const formattedTime = date.toLocaleTimeString('he-IL', { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            });
 
             return (
               <div key={order.id} className="order-card">
@@ -84,13 +93,15 @@ const OrderHistory = () => {
                 </div>
                 
                 <div className="order-details">
-                  <div className="delivery-info">
-                    <strong>כתובת משלוח:</strong> {order.address}
-                  </div>
+                  {order.address && (
+                    <div className="delivery-info">
+                      <strong>כתובת משלוח:</strong> {order.address}
+                    </div>
+                  )}
                   
                   <div className="order-items">
                     <strong>פריטים:</strong>
-                    {order.items.map((item, index) => (
+                    {order.items && order.items.map((item, index) => (
                       <div key={index} className="order-item">
                         <span className="item-name">{item.name}</span>
                         <span className="item-quantity">x{item.quantity}</span>
@@ -104,16 +115,27 @@ const OrderHistory = () => {
                       <strong>סה"כ: ₪{order.total}</strong>
                     </div>
                     
-                    {order.status === 'delivered' && (
-                      <div className="order-actions">
+                    <div className="order-actions">
+                      {/* כפתור הזמן שוב זמין לכל ההזמנות שנמסרו */}
+                      {order.status === 'delivered' && (
                         <button 
                           className="reorder-btn"
-                          onClick={() => reorderItems(order)}
+                          onClick={() => handleReorder(order)}
+                          title="הוסף את כל הפריטים מההזמנה הזו לעגלת הקניות"
                         >
-                          הזמן שוב
+                          🔄 הזמן שוב
                         </button>
-                      </div>
-                    )}
+                      )}
+                      
+                      {/* אפשרות לראות פרטים מלאים */}
+                      <button 
+                        className="details-btn"
+                        onClick={() => alert(`פרטי הזמנה #${order.id}\nטלפון: ${order.phone || 'לא צוין'}\nהערות: ${order.notes || 'אין'}`)}
+                        title="פרטים נוספים"
+                      >
+                        ℹ️ פרטים
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

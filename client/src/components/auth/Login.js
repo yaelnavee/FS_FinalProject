@@ -49,12 +49,6 @@ const Login = ({ onLogin }) => {
     <div className="auth-container">
       <div className="auth-form">
         <h2>התחברות</h2>
-        
-        <div className="demo-users">
-          <h4>משתמשים לדוגמה:</h4>
-          <p><strong>עובד:</strong> manager / password123</p>
-          <p><strong>לקוח:</strong> customer1 / password123</p>
-        </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">

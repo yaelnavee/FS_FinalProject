@@ -7,16 +7,6 @@ const CustomerDashboard = ({ user }) => {
   const [activeTab, setActiveTab] = useState('menu');
   const [cart, setCart] = useState([]);
 
-  const menuItems = [
-    { id: 1, name: 'פיצה מרגריטה', price: 45, category: 'פיצות', image: '🍕', description: 'רוטב עגבניות, מוצרלה, בזיליקום' },
-    { id: 2, name: 'פיצה פפרוני', price: 52, category: 'פיצות', image: '🍕', description: 'רוטב עגבניות, מוצרלה, פפרוני' },
-    { id: 3, name: 'פיצה ירקות', price: 48, category: 'פיצות', image: '🍕', description: 'רוטב עגבניות, מוצרלה, פלפלים, בצל, זיתים' },
-    { id: 4, name: 'פיצה 4 גבינות', price: 58, category: 'פיצות', image: '🍕', description: 'מוצרלה, פרמזן, גורגונזולה, ריקוטה' },
-    { id: 5, name: 'קולה', price: 8, category: 'שתייה', image: '🥤', description: 'משקה קולה קר' },
-    { id: 6, name: 'מים', price: 5, category: 'שתייה', image: '💧', description: 'מים מינרליים' },
-    { id: 7, name: 'מקלות שום', price: 15, category: 'תוספות', image: '🥖', description: 'מקלות לחם עם שום וחמאה' }
-  ];
-
   const addToCart = (item) => {
     const existingItem = cart.find(cartItem => cartItem.id === item.id);
     if (existingItem) {
@@ -27,6 +17,19 @@ const CustomerDashboard = ({ user }) => {
       ));
     } else {
       setCart([...cart, { ...item, quantity: 1 }]);
+    }
+  };
+
+  const addMultipleToCart = (item, quantity) => {
+    const existingItem = cart.find(cartItem => cartItem.id === item.id);
+    if (existingItem) {
+      setCart(cart.map(cartItem => 
+        cartItem.id === item.id 
+          ? { ...cartItem, quantity: cartItem.quantity + quantity }
+          : cartItem
+      ));
+    } else {
+      setCart([...cart, { ...item, quantity }]);
     }
   };
 
@@ -54,10 +57,61 @@ const CustomerDashboard = ({ user }) => {
     setCart([]);
   };
 
+  // פונקציה להזמנה חוזרת
+  const reorderFromHistory = async (order) => {
+    try {
+      // קבלת התפריט הנוכחי כדי לוודא שהפריטים עדיין קיימים
+      const response = await fetch('http://localhost:5000/api/menu');
+      const currentMenu = await response.json();
+
+      // מיפוי הפריטים מההזמנה הקודמת לתפריט הנוכחי
+      const itemsToAdd = [];
+      
+      order.items.forEach(orderItem => {
+        // חיפוש הפריט בתפריט הנוכחי לפי שם (כי אין לנו pizza_id בהיסטוריה)
+        const menuItem = currentMenu.find(item => 
+          item.name === orderItem.name && item.available
+        );
+        
+        if (menuItem) {
+          itemsToAdd.push({
+            ...menuItem,
+            quantity: orderItem.quantity
+          });
+        }
+      });
+
+      if (itemsToAdd.length === 0) {
+        alert('לא ניתן להזמין מחדש - הפריטים לא זמינים יותר');
+        return;
+      }
+
+      // הוספת הפריטים לעגלה
+      itemsToAdd.forEach(item => {
+        addMultipleToCart(item, item.quantity);
+      });
+
+      // מעבר לטאב של העגלה
+      setActiveTab('cart');
+
+      // הודעה למשתמש
+      const unavailableItems = order.items.length - itemsToAdd.length;
+      if (unavailableItems > 0) {
+        alert(`הוספו ${itemsToAdd.length} פריטים לעגלה. ${unavailableItems} פריטים לא זמינים כרגע.`);
+      } else {
+        alert(`כל הפריטים מההזמנה הקודמת נוספו לעגלה בהצלחה!`);
+      }
+
+    } catch (error) {
+      console.error('Error reordering:', error);
+      alert('שגיאה בהזמנה חוזרת');
+    }
+  };
+
   const renderTabContent = () => {
     switch(activeTab) {
       case 'menu':
-        return <MenuView menuItems={menuItems} onAddToCart={addToCart} />;
+        return <MenuView onAddToCart={addToCart} />;
       case 'cart':
         return (
           <CartView 
@@ -69,9 +123,9 @@ const CustomerDashboard = ({ user }) => {
           />
         );
       case 'orders':
-        return <OrderHistory />;
+        return <OrderHistory onReorder={reorderFromHistory} />;
       default:
-        return <MenuView menuItems={menuItems} onAddToCart={addToCart} />;
+        return <MenuView onAddToCart={addToCart} />;
     }
   };
 
