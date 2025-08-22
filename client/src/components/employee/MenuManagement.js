@@ -46,7 +46,7 @@ const MenuManagement = () => {
         alert('שגיאה בהוספה: ' + error.message);
       }
     } catch (err) {
-      console.error('שגיאה בהוספת פיצה:', err);
+      console.error('שגיאה בהוספת מנה:', err);
       alert('שגיאה כללית');
     }
   };
@@ -101,11 +101,11 @@ const MenuManagement = () => {
       <h3>ניהול תפריט</h3>
       
       <form onSubmit={handleAddItem} className="add-item-form">
-        <h4>הוספת פריט חדש</h4>
+        <h4>הוספת מנה חדשה</h4>
         <div className="form-row">
           <input
             type="text"
-            placeholder="שם הפריט"
+            placeholder="שם המנה"
             value={newItem.name}
             onChange={(e) => setNewItem({...newItem, name: e.target.value})}
             required
@@ -130,7 +130,7 @@ const MenuManagement = () => {
       </form>
 
       <div className="menu-items">
-        <h4>פריטי התפריט</h4>
+        <h4>מנות התפריט</h4>
         {menuItems.map(item => (
           <div key={item.id} className={`menu-item ${!item.available ? 'unavailable' : ''}`}>
             <span className="item-name">{item.name}</span>
