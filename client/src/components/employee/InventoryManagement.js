@@ -128,12 +128,6 @@ const InventoryManagement = () => {
     }
   };
 
-  // פונקציה לעדכון מהיר - בקפיצות של 5 או 10
-  const quickUpdate = (id, currentQuantity, minStock, increment) => {
-    const newQuantity = Math.max(0, currentQuantity + increment);
-    updateQuantity(id, newQuantity, minStock);
-  };
-
   const isLowStock = (item) => item.quantity <= item.min_stock;
 
   if (loading) {
@@ -210,25 +204,6 @@ const InventoryManagement = () => {
               </div>
               
               <div className="quantity-controls">
-                {/* כפתורי עדכון מהיר */}
-                <div className="quick-controls">
-                  <button 
-                    className="quick-btn"
-                    onClick={() => quickUpdate(item.id, item.quantity, item.min_stock, -10)}
-                    title="הקטן ב-10"
-                  >
-                    -10
-                  </button>
-                  <button 
-                    className="quick-btn"
-                    onClick={() => quickUpdate(item.id, item.quantity, item.min_stock, -5)}
-                    title="הקטן ב-5"
-                  >
-                    -5
-                  </button>
-                </div>
-
-                {/* כפתורי +/- רגילים */}
                 <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.min_stock)}>
                   -
                 </button>
@@ -238,24 +213,6 @@ const InventoryManagement = () => {
                 <button onClick={() => updateQuantity(item.id, item.quantity + 1, item.min_stock)}>
                   +
                 </button>
-
-                {/* כפתורי עדכון מהיר */}
-                <div className="quick-controls">
-                  <button 
-                    className="quick-btn"
-                    onClick={() => quickUpdate(item.id, item.quantity, item.min_stock, 5)}
-                    title="הוסף 5"
-                  >
-                    +5
-                  </button>
-                  <button 
-                    className="quick-btn"
-                    onClick={() => quickUpdate(item.id, item.quantity, item.min_stock, 10)}
-                    title="הוסף 10"
-                  >
-                    +10
-                  </button>
-                </div>
               </div>
               
               <div className="stock-status">
