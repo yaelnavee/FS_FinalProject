@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import MenuManagement from './MenuManagement';
 import OrderManagement from './OrderManagement';
 import InventoryManagement from './InventoryManagement';
+import AnalyticsDashboard from './AnalyticsDashboard';
 
 const EmployeeDashboard = ({ user }) => {
-  const [activeTab, setActiveTab] = useState('menu');
+  const [activeTab, setActiveTab] = useState('analytics');
 
   const renderTabContent = () => {
     switch(activeTab) {
+      case 'analytics':
+        return <AnalyticsDashboard />;
       case 'menu':
         return <MenuManagement />;
       case 'orders':
@@ -15,7 +18,7 @@ const EmployeeDashboard = ({ user }) => {
       case 'inventory':
         return <InventoryManagement />;
       default:
-        return <MenuManagement />;
+        return <AnalyticsDashboard />;
     }
   };
 
@@ -28,16 +31,22 @@ const EmployeeDashboard = ({ user }) => {
 
       <div className="dashboard-tabs">
         <button 
-          className={activeTab === 'menu' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('menu')}
+          className={activeTab === 'analytics' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('analytics')}
         >
-          📋 ניהול תפריט
+          📊 ניתוח נתונים
         </button>
         <button 
           className={activeTab === 'orders' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('orders')}
         >
           📦 ניהול הזמנות
+        </button>
+        <button 
+          className={activeTab === 'menu' ? 'tab active' : 'tab'}
+          onClick={() => setActiveTab('menu')}
+        >
+          📋 ניהול תפריט
         </button>
         <button 
           className={activeTab === 'inventory' ? 'tab active' : 'tab'}

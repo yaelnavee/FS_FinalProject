@@ -5,6 +5,7 @@ const authRoutes = require('./routes/auth');
 const menuRoutes = require('./routes/menu');
 const orderRoutes = require('./routes/orders');
 const inventoryRoutes = require('./routes/inventory');
+const analyticsRoutes = require('./routes/analytics');
 
 dotenv.config();
 
@@ -21,12 +22,12 @@ app.use('/api/menu', menuRoutes);
 console.log("Trying to load /api/orders route...");
 app.use('/api/orders', orderRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.use('/api/test', (req, res) => {
   res.json({ msg: "Hello from test" });
 });
 
-// Basic route
 app.get('/', (req, res) => {
   res.json({ message: 'Pizza Shop API is running!' });
 });
@@ -34,3 +35,4 @@ app.get('/', (req, res) => {
 const s = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
