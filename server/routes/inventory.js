@@ -15,6 +15,19 @@ router.get('/', authenticateToken, requireEmployee, async (req, res) => {
   }
 });
 
+// קבלת כל הרכיבים לבחירה (לתפריט מנות)
+router.get('/ingredients', authenticateToken, requireEmployee, async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      'SELECT id, name, unit, quantity FROM inventory ORDER BY name'
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching ingredients:', error);
+    res.status(500).json({ message: 'שגיאה בקבלת רכיבים' });
+  }
+});
+
 // הוספת פריט מלאי חדש
 router.post('/', authenticateToken, requireEmployee, async (req, res) => {
   const { name, quantity, unit, min_stock } = req.body;

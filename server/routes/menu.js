@@ -4,37 +4,134 @@ const { authenticateToken, requireEmployee } = require('../middleware/auth');
 
 const router = express.Router();
 
-//  קבלת כל הפיצות
+// קבלת כל הפיצות עם בדיקת זמינות לפי מלאי
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await db.execute('SELECT * FROM pizzas');
-    res.json(rows);
+    const [pizzas] = await db.execute(`
+      SELECT p.*, 
+             CASE 
+               WHEN p.available = 0 THEN 0
+               WHEN COUNT(pi.inventory_id) = 0 THEN 1
+               WHEN MIN(CASE WHEN i.quantity >= pi.quantity_needed THEN 1 ELSE 0 END) = 1 THEN 1
+               ELSE 0 
+             END as stock_available
+      FROM pizzas p
+      LEFT JOIN pizza_ingredients pi ON p.id = pi.pizza_id
+      LEFT JOIN inventory i ON pi.inventory_id = i.id
+      GROUP BY p.id
+      ORDER BY p.category, p.name
+    `);
+    res.json(pizzas);
   } catch (error) {
     console.error('Error fetching menu:', error);
     res.status(500).json({ message: 'שגיאה בקבלת תפריט' });
   }
 });
 
-// הוספת פיצה (רק לעובדים)
-router.post('/', authenticateToken, requireEmployee, async (req, res) => {
-  const { name, price, description, category, image_url } = req.body;
-
+// קבלת פיצה ספציפית עם הרכיבים שלה
+router.get('/:id/ingredients', authenticateToken, requireEmployee, async (req, res) => {
   try {
-    const [result] = await db.execute(
+    const [ingredients] = await db.execute(`
+      SELECT pi.*, i.name as ingredient_name, i.unit, i.quantity as stock_quantity
+      FROM pizza_ingredients pi
+      JOIN inventory i ON pi.inventory_id = i.id
+      WHERE pi.pizza_id = ?
+      ORDER BY i.name
+    `, [req.params.id]);
+    
+    res.json(ingredients);
+  } catch (error) {
+    console.error('Error fetching pizza ingredients:', error);
+    res.status(500).json({ message: 'שגיאה בקבלת רכיבי המנה' });
+  }
+});
+
+// הוספת פיצה עם רכיבים
+router.post('/', authenticateToken, requireEmployee, async (req, res) => {
+  const { name, price, description, category, image_url, ingredients = [] } = req.body;
+
+  const connection = await db.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    // הוספת הפיצה
+    const [pizzaResult] = await connection.execute(
       'INSERT INTO pizzas (name, price, description, category, image_url) VALUES (?, ?, ?, ?, ?)',
       [name, price, description, category, image_url]
     );
 
-    res.status(201).json({ id: result.insertId, name, price, description, category, image_url, available: true });
+    const pizzaId = pizzaResult.insertId;
+
+    // הוספת הרכיבים
+    if (ingredients.length > 0) {
+      for (const ingredient of ingredients) {
+        await connection.execute(
+          'INSERT INTO pizza_ingredients (pizza_id, inventory_id, quantity_needed) VALUES (?, ?, ?)',
+          [pizzaId, ingredient.inventory_id, ingredient.quantity_needed || 1]
+        );
+      }
+    }
+
+    await connection.commit();
+    
+    res.status(201).json({ 
+      id: pizzaId, 
+      name, 
+      price, 
+      description, 
+      category, 
+      image_url, 
+      available: true,
+      ingredients 
+    });
   } catch (error) {
-    console.error('Error adding pizza:', error);
-    res.status(500).json({ message: 'שגיאה בהוספת פריט' });
+    await connection.rollback();
+    console.error('Error adding pizza with ingredients:', error);
+    res.status(500).json({ message: 'שגיאה בהוספת מנה' });
+  } finally {
+    connection.release();
   }
 });
 
-//  מחיקת פיצה
+// עדכון רכיבי פיצה
+router.put('/:id/ingredients', authenticateToken, requireEmployee, async (req, res) => {
+  const { ingredients } = req.body;
+  const pizzaId = req.params.id;
+
+  const connection = await db.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    // מחיקת הרכיבים הקיימים
+    await connection.execute('DELETE FROM pizza_ingredients WHERE pizza_id = ?', [pizzaId]);
+
+    // הוספת הרכיבים החדשים
+    if (ingredients && ingredients.length > 0) {
+      for (const ingredient of ingredients) {
+        await connection.execute(
+          'INSERT INTO pizza_ingredients (pizza_id, inventory_id, quantity_needed) VALUES (?, ?, ?)',
+          [pizzaId, ingredient.inventory_id, ingredient.quantity_needed || 1]
+        );
+      }
+    }
+
+    await connection.commit();
+    res.json({ success: true });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error updating pizza ingredients:', error);
+    res.status(500).json({ message: 'שגיאה בעדכון רכיבי המנה' });
+  } finally {
+    connection.release();
+  }
+});
+
+// מחיקת פיצה
 router.delete('/:id', authenticateToken, requireEmployee, async (req, res) => {
   try {
+    // הרכיבים יימחקו אוטומטית בגלל CASCADE
     const [result] = await db.execute('DELETE FROM pizzas WHERE id = ?', [req.params.id]);
     res.json({ success: true });
   } catch (error) {
@@ -43,7 +140,7 @@ router.delete('/:id', authenticateToken, requireEmployee, async (req, res) => {
   }
 });
 
-//  שינוי זמינות
+// שינוי זמינות
 router.put('/:id/toggle', authenticateToken, requireEmployee, async (req, res) => {
   try {
     await db.execute(
@@ -54,6 +151,36 @@ router.put('/:id/toggle', authenticateToken, requireEmployee, async (req, res) =
   } catch (error) {
     console.error('Error toggling availability:', error);
     res.status(500).json({ message: 'שגיאה בעדכון זמינות' });
+  }
+});
+
+// בדיקת זמינות מנה לפי מלאי
+router.get('/:id/availability', async (req, res) => {
+  try {
+    const [result] = await db.execute(`
+      SELECT p.available,
+             CASE 
+               WHEN p.available = 0 THEN 0
+               WHEN COUNT(pi.inventory_id) = 0 THEN 1
+               WHEN MIN(CASE WHEN i.quantity >= pi.quantity_needed THEN 1 ELSE 0 END) = 1 THEN 1
+               ELSE 0 
+             END as stock_available,
+             GROUP_CONCAT(
+               CASE WHEN i.quantity < pi.quantity_needed 
+               THEN CONCAT(i.name, ' (נדרש: ', pi.quantity_needed, ', יש: ', i.quantity, ')') 
+               END SEPARATOR ', '
+             ) as missing_ingredients
+      FROM pizzas p
+      LEFT JOIN pizza_ingredients pi ON p.id = pi.pizza_id
+      LEFT JOIN inventory i ON pi.inventory_id = i.id
+      WHERE p.id = ?
+      GROUP BY p.id
+    `, [req.params.id]);
+
+    res.json(result[0] || { available: false, stock_available: false });
+  } catch (error) {
+    console.error('Error checking availability:', error);
+    res.status(500).json({ message: 'שגיאה בבדיקת זמינות' });
   }
 });
 

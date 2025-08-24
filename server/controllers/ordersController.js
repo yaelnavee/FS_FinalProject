@@ -11,6 +11,30 @@ exports.createOrder = async (req, res) => {
   }
 
   try {
+    // בדיקת זמינות מלאי לפני יצירת ההזמנה
+    for (const item of items) {
+      const [availability] = await db.execute(`
+        SELECT p.name, p.available,
+               CASE 
+                 WHEN p.available = 0 THEN 0
+                 WHEN COUNT(pi.inventory_id) = 0 THEN 1
+                 WHEN MIN(CASE WHEN i.quantity >= (pi.quantity_needed * ?) THEN 1 ELSE 0 END) = 1 THEN 1
+                 ELSE 0 
+               END as stock_available
+        FROM pizzas p
+        LEFT JOIN pizza_ingredients pi ON p.id = pi.pizza_id
+        LEFT JOIN inventory i ON pi.inventory_id = i.id
+        WHERE p.id = ?
+        GROUP BY p.id
+      `, [item.quantity, item.pizza_id]);
+
+      if (availability.length === 0 || !availability[0].available || !availability[0].stock_available) {
+        return res.status(400).json({ 
+          message: `המנה "${availability[0]?.name || 'לא זמינה'}" אינה זמינה כרגע או שאין מספיק מלאי` 
+        });
+      }
+    }
+
     // יצירת הזמנה בטבלת orders
     const [orderResult] = await db.execute(
       'INSERT INTO orders (user_id, total_price, phone, address, notes) VALUES (?, ?, ?, ?, ?)',
@@ -121,6 +145,56 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
+// פונקציה לעדכון מלאי כשהזמנה מסתיימת
+const updateInventoryForOrder = async (orderId) => {
+  const connection = await db.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    // קבלת כל הפריטים בהזמנה
+    const [orderItems] = await connection.execute(`
+      SELECT oi.pizza_id, oi.quantity as order_quantity
+      FROM order_items oi
+      WHERE oi.order_id = ?
+    `, [orderId]);
+
+    // עבור כל פריט בהזמנה, עדכון המלאי
+    for (const orderItem of orderItems) {
+      // קבלת הרכיבים הנדרשים לפיצה זו
+      const [ingredients] = await connection.execute(`
+        SELECT pi.inventory_id, pi.quantity_needed, i.name as ingredient_name
+        FROM pizza_ingredients pi
+        JOIN inventory i ON pi.inventory_id = i.id
+        WHERE pi.pizza_id = ?
+      `, [orderItem.pizza_id]);
+
+      // עדכון כל רכיב במלאי
+      for (const ingredient of ingredients) {
+        const totalNeeded = ingredient.quantity_needed * orderItem.order_quantity;
+        
+        const [updateResult] = await connection.execute(`
+          UPDATE inventory 
+          SET quantity = GREATEST(0, quantity - ?)
+          WHERE id = ?
+        `, [totalNeeded, ingredient.inventory_id]);
+
+        console.log(`עודכן מלאי: ${ingredient.ingredient_name} - הופחתו ${totalNeeded} יחידות`);
+      }
+    }
+
+    await connection.commit();
+    console.log(`מלאי עודכן בהצלחה עבור הזמנה ${orderId}`);
+    
+  } catch (error) {
+    await connection.rollback();
+    console.error('שגיאה בעדכון מלאי:', error);
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
 exports.updateOrderStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -131,11 +205,37 @@ exports.updateOrderStatus = async (req, res) => {
   }
 
   try {
+    // בדיקת הסטטוס הנוכחי של ההזמנה
+    const [currentOrder] = await db.execute(
+      'SELECT status FROM orders WHERE id = ?',
+      [id]
+    );
+
+    if (currentOrder.length === 0) {
+      return res.status(404).json({ message: 'הזמנה לא נמצאה' });
+    }
+
+    const previousStatus = currentOrder[0].status;
+
+    // עדכון הסטטוס
     await db.execute(
       'UPDATE orders SET status = ? WHERE id = ?',
       [status, id]
     );
-    res.json({ success: true });
+
+    // אם הסטטוס השתנה ל-"delivered" ולא היה כבר "delivered", עדכון המלאי
+    if (status === 'delivered' && previousStatus !== 'delivered') {
+      try {
+        await updateInventoryForOrder(id);
+        console.log(`מלאי עודכן אוטומטית עבור הזמנה ${id}`);
+      } catch (inventoryError) {
+        console.error('שגיאה בעדכון מלאי אוטומטי:', inventoryError);
+        // לא נכשיל את העדכון של הסטטוס גם אם יש בעיה במלאי
+      }
+    }
+
+    res.json({ success: true, message: 'סטטוס עודכן בהצלחה' });
+    
   } catch (error) {
     console.error('Error updating order status:', error);
     res.status(500).json({ message: 'שגיאה בעדכון סטטוס' });
