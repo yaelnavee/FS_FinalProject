@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 const MenuView = ({ onAddToCart }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('הכל');
+  const [toastMessage, setToastMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/menu')
@@ -27,8 +29,32 @@ const MenuView = ({ onAddToCart }) => {
     return '';
   };
 
+  const showToastMessage = (message, duration = 3000) => {
+    setToastMessage(message);
+    setShowToast(true);
+    
+    setTimeout(() => {
+      setShowToast(false);
+    }, duration);
+  };
+
+  const handleAddToCart = (item) => {
+    onAddToCart(item);
+    showToastMessage(`${item.name} נוסף לסל בהצלחה!`);
+  };
+
   return (
     <div className="menu-view">
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="toast-notification">
+          <div className="toast-content">
+            <span className="toast-icon">✅</span>
+            <span className="toast-message">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+
       <div className="category-filters">
         {categories.map(category => (
           <button
@@ -64,7 +90,7 @@ const MenuView = ({ onAddToCart }) => {
                     <span className="item-price">₪{item.price}</span>
                     <button 
                       className={`add-to-cart-btn ${!available ? 'disabled' : ''}`}
-                      onClick={() => available && onAddToCart(item)}
+                      onClick={() => available && handleAddToCart(item)}
                       disabled={!available}
                     >
                       {available ? 'הוסף לסל' : 'לא זמין'}
