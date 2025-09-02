@@ -1777,3 +1777,8 @@ body {
 .toast-notification:nth-child(4) {
   top: 200px;
 }
+
+@media (max-width: 768px) {
+  .dashboard-tabs { flex-direction: column; }
+  .analytics-stats-grid { grid-template-columns: 1fr; }
+}
