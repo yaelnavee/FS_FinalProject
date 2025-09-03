@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './inventory.css'
 
 const InventoryManagement = () => {
   const [inventory, setInventory] = useState([]);

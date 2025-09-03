@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './cart.css'
 
 const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCart }) => {
   const [showCheckout, setShowCheckout] = useState(false);

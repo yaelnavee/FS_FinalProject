@@ -1,0 +1,108 @@
+/* Order Management */
+.orders-list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.order-card {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.order-header h4 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.order-time {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.order-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-preparing {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.status-ready {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-delivered {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.order-details p {
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.order-items {
+  margin: 1rem 0;
+}
+
+.order-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f1f1;
+  color: #6c757d;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.order-total {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 6px;
+  text-align: center;
+  margin-top: 1rem;
+  color: #2c3e50;
+}
+
+.order-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.order-actions button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.order-actions button:hover {
+  background: #0056b3;
+}

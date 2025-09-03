@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './analystics.css';
 
 const AnalyticsDashboard = () => {
   const [overview, setOverview] = useState(null);

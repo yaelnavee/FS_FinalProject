@@ -1,0 +1,87 @@
+/* Order History */
+.no-orders {
+  text-align: center;
+  padding: 3rem;
+  color: #6c757d;
+}
+
+.order-datetime {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.order-time {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.delivery-info {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  color: #495057;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+
+.item-quantity {
+  flex: 1;
+  text-align: center;
+  color: #6c757d;
+}
+
+.item-price {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+  color: #27ae60;
+}
+
+.order-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid #ecf0f1;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.reorder-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s;
+}
+
+.reorder-btn:hover {
+  background: #c0392b;
+}
+
+.status-on-way {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}

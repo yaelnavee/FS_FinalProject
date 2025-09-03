@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import './orderManagment.css';
 
 const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
