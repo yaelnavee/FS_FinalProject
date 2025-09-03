@@ -6,6 +6,7 @@ const menuRoutes = require('./routes/menu');
 const orderRoutes = require('./routes/orders');
 const inventoryRoutes = require('./routes/inventory');
 const analyticsRoutes = require('./routes/analytics');
+const path = require('path');
 
 dotenv.config();
 
@@ -23,7 +24,7 @@ console.log("Trying to load /api/orders route...");
 app.use('/api/orders', orderRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/analytics', analyticsRoutes);
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/test', (req, res) => {
   res.json({ msg: "Hello from test" });
 });

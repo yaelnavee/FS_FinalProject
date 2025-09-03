@@ -4,12 +4,13 @@ const MenuManagement = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [availableIngredients, setAvailableIngredients] = useState([]);
   const [selectedIngredients, setSelectedIngredients] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [newItem, setNewItem] = useState({
     name: '',
     price: '',
     category: 'פיצות',
-    description: '',
-    image_url: ''
+    description: ''
   });
 
   useEffect(() => {
@@ -51,6 +52,42 @@ const MenuManagement = () => {
     setSelectedIngredients(updated);
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // בדיקת סוג הקובץ
+      if (!file.type.startsWith('image/')) {
+        alert('אנא בחר קובץ תמונה בלבד');
+        return;
+      }
+
+      // בדיקת גודל הקובץ (5MB מקסימום)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('הקובץ גדול מדי. מקסימום 5MB');
+        return;
+      }
+
+      setSelectedImage(file);
+      
+      // יצירת תצוגה מקדימה
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    // איפוס שדה הקובץ
+    const fileInput = document.getElementById('image-upload');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
   const handleAddItem = async (e) => {
     e.preventDefault();
 
@@ -60,29 +97,43 @@ const MenuManagement = () => {
       return;
     }
 
-    // סינון רכיבים שנבחרו (להסיר רכיבים ריקים)
+    // יצירת FormData להעלאת קבצים
+    const formData = new FormData();
+    formData.append('name', newItem.name);
+    formData.append('price', newItem.price);
+    formData.append('category', newItem.category);
+    formData.append('description', newItem.description);
+    
+    // הוספת התמונה אם נבחרה
+    if (selectedImage) {
+      formData.append('image', selectedImage);
+    }
+
+    // הוספת הרכיבים
     const validIngredients = selectedIngredients.filter(
       ingredient => ingredient.inventory_id && ingredient.quantity_needed > 0
     );
+    formData.append('ingredients', JSON.stringify(validIngredients));
 
     try {
       const response = await fetch('http://localhost:5000/api/menu', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
+          // לא לשים Content-Type כי FormData מגדיר אותו אוטומטית
         },
-        body: JSON.stringify({
-          ...newItem,
-          ingredients: validIngredients
-        })
+        body: formData
       });
 
       if (response.ok) {
         const addedItem = await response.json();
         setMenuItems([...menuItems, addedItem]);
-        setNewItem({ name: '', price: '', category: 'פיצות', description: '', image_url: '' });
+        
+        // איפוס הטופס
+        setNewItem({ name: '', price: '', category: 'פיצות', description: '' });
         setSelectedIngredients([]);
+        handleRemoveImage();
+        
         alert('המנה נוספה בהצלחה!');
       } else {
         const error = await response.json();
@@ -117,6 +168,8 @@ const MenuManagement = () => {
   };
 
   const deleteItem = async (id) => {
+    if (!window.confirm('האם את בטוחה שברצונך למחוק מנה זו?')) return;
+
     const token = localStorage.getItem('token');
     try {
       const response = await fetch(`http://localhost:5000/api/menu/${id}`, {
@@ -127,6 +180,7 @@ const MenuManagement = () => {
       });
       if (response.ok) {
         setMenuItems(menuItems.filter(item => item.id !== id));
+        alert('המנה נמחקה בהצלחה');
       } else {
         alert('שגיאה במחיקה');
       }
@@ -160,6 +214,8 @@ const MenuManagement = () => {
           <input
             type="number"
             placeholder="מחיר"
+            min="0"
+            step="0.01"
             value={newItem.price}
             onChange={(e) => setNewItem({...newItem, price: e.target.value})}
             required
@@ -181,6 +237,36 @@ const MenuManagement = () => {
             value={newItem.description}
             onChange={(e) => setNewItem({...newItem, description: e.target.value})}
           />
+        </div>
+
+        {/* העלאת תמונה */}
+        <div className="image-upload-section">
+          <h5>תמונת המנה</h5>
+          <div className="image-upload-container">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              id="image-upload"
+              className="image-input"
+            />
+            <label htmlFor="image-upload" className="image-upload-label">
+              {imagePreview ? 'שנה תמונה' : 'בחר תמונה'}
+            </label>
+            
+            {imagePreview && (
+              <div className="image-preview">
+                <img src={imagePreview} alt="תצוגה מקדימה" />
+                <button 
+                  type="button" 
+                  onClick={handleRemoveImage}
+                  className="remove-image-btn"
+                >
+                  הסר תמונה
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* בחירת רכיבים */}
@@ -235,29 +321,52 @@ const MenuManagement = () => {
         </div>
       </form>
 
+      {/* תצוגת מנות קיימות */}
       <div className="menu-items">
         <h4>מנות התפריט</h4>
-        {menuItems.map(item => {
-          const availability = getAvailabilityDisplay(item);
-          return (
-            <div key={item.id} className={`menu-item ${!item.available ? 'unavailable' : ''}`}>
-              <span className="item-name">{item.name}</span>
-              <span className="item-category">{item.category}</span>
-              <span className="item-price">₪{item.price}</span>
-              <span className={`item-status ${availability.class}`}>
-                {availability.text}
-              </span>
-              <div className="item-actions">
-                <button onClick={() => toggleAvailability(item.id)}>
-                  {item.available ? 'הסתר' : 'הצג'}
-                </button>
-                <button onClick={() => deleteItem(item.id)} className="delete-btn">
-                  מחק
-                </button>
+        {menuItems.length === 0 ? (
+          <p>אין מנות בתפריט</p>
+        ) : (
+          menuItems.map(item => {
+            const availability = getAvailabilityDisplay(item);
+            return (
+              <div key={item.id} className={`menu-item ${!item.available ? 'unavailable' : ''}`}>
+                {item.image_url && (
+                  <div className="item-image">
+                    <img 
+                      src={`http://localhost:5000${item.image_url}`} 
+                      alt={item.name}
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+                
+                <div className="item-details">
+                  <span className="item-name">{item.name}</span>
+                  <span className="item-category">{item.category}</span>
+                  <span className="item-price">₪{item.price}</span>
+                  {item.description && (
+                    <span className="item-description">{item.description}</span>
+                  )}
+                  <span className={`item-status ${availability.class}`}>
+                    {availability.text}
+                  </span>
+                </div>
+                
+                <div className="item-actions">
+                  <button onClick={() => toggleAvailability(item.id)}>
+                    {item.available ? 'הסתר' : 'הצג'}
+                  </button>
+                  <button onClick={() => deleteItem(item.id)} className="delete-btn">
+                    מחק
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,9 @@
 const express = require('express');
 const db = require('../db');
 const { authenticateToken, requireEmployee } = require('../middleware/auth');
+const upload = require('../middleware/upload');
+const fs = require('fs');
+const path = require('path');
 
 const router = express.Router();
 
@@ -46,9 +49,12 @@ router.get('/:id/ingredients', authenticateToken, requireEmployee, async (req, r
   }
 });
 
-// הוספת פיצה עם רכיבים
-router.post('/', authenticateToken, requireEmployee, async (req, res) => {
-  const { name, price, description, category, image_url, ingredients = [] } = req.body;
+// הוספת פיצה עם תמונה ורכיבים
+router.post('/', authenticateToken, requireEmployee, upload.single('image'), async (req, res) => {
+  const { name, price, description, category, ingredients } = req.body;
+  
+  // URL של התמונה שהועלתה
+  const image_url = req.file ? `/uploads/images/${req.file.filename}` : null;
 
   const connection = await db.getConnection();
   
@@ -64,12 +70,24 @@ router.post('/', authenticateToken, requireEmployee, async (req, res) => {
     const pizzaId = pizzaResult.insertId;
 
     // הוספת הרכיבים
-    if (ingredients.length > 0) {
-      for (const ingredient of ingredients) {
-        await connection.execute(
-          'INSERT INTO pizza_ingredients (pizza_id, inventory_id, quantity_needed) VALUES (?, ?, ?)',
-          [pizzaId, ingredient.inventory_id, ingredient.quantity_needed || 1]
-        );
+    if (ingredients) {
+      let parsedIngredients;
+      try {
+        parsedIngredients = typeof ingredients === 'string' ? 
+          JSON.parse(ingredients) : ingredients;
+      } catch (e) {
+        parsedIngredients = [];
+      }
+
+      if (Array.isArray(parsedIngredients) && parsedIngredients.length > 0) {
+        for (const ingredient of parsedIngredients) {
+          if (ingredient.inventory_id && ingredient.quantity_needed > 0) {
+            await connection.execute(
+              'INSERT INTO pizza_ingredients (pizza_id, inventory_id, quantity_needed) VALUES (?, ?, ?)',
+              [pizzaId, ingredient.inventory_id, ingredient.quantity_needed]
+            );
+          }
+        }
       }
     }
 
@@ -81,12 +99,20 @@ router.post('/', authenticateToken, requireEmployee, async (req, res) => {
       price, 
       description, 
       category, 
-      image_url, 
-      available: true,
-      ingredients 
+      image_url,
+      available: true
     });
   } catch (error) {
     await connection.rollback();
+    
+    // מחיקת התמונה שהועלתה אם יש שגיאה
+    if (req.file) {
+      const imagePath = path.join(__dirname, '..', req.file.path);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+    
     console.error('Error adding pizza with ingredients:', error);
     res.status(500).json({ message: 'שגיאה בהוספת מנה' });
   } finally {
@@ -128,11 +154,67 @@ router.put('/:id/ingredients', authenticateToken, requireEmployee, async (req, r
   }
 });
 
-// מחיקת פיצה
-router.delete('/:id', authenticateToken, requireEmployee, async (req, res) => {
+// עדכון תמונה למנה קיימת
+router.put('/:id/image', authenticateToken, requireEmployee, upload.single('image'), async (req, res) => {
+  const pizzaId = req.params.id;
+  const image_url = req.file ? `/uploads/images/${req.file.filename}` : null;
+
+  if (!image_url) {
+    return res.status(400).json({ message: 'לא הועלתה תמונה' });
+  }
+
   try {
-    // הרכיבים יימחקו אוטומטית בגלל CASCADE
-    const [result] = await db.execute('DELETE FROM pizzas WHERE id = ?', [req.params.id]);
+    // קבלת התמונה הקודמת למחיקה
+    const [oldPizza] = await db.execute('SELECT image_url FROM pizzas WHERE id = ?', [pizzaId]);
+    
+    // עדכון התמונה החדשה
+    await db.execute(
+      'UPDATE pizzas SET image_url = ? WHERE id = ?',
+      [image_url, pizzaId]
+    );
+    
+    // מחיקת התמונה הקודמת
+    if (oldPizza[0]?.image_url) {
+      const oldImagePath = path.join(__dirname, '..', oldPizza[0].image_url);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+    }
+    
+    res.json({ success: true, image_url });
+  } catch (error) {
+    // מחיקת התמונה החדשה במקרה של שגיאה
+    if (req.file) {
+      const imagePath = path.join(__dirname, '..', req.file.path);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+    
+    console.error('Error updating pizza image:', error);
+    res.status(500).json({ message: 'שגיאה בעדכון תמונה' });
+  }
+});
+
+// מחיקת פיצה (כולל מחיקת התמונה)
+router.delete('/:id', authenticateToken, requireEmployee, async (req, res) => {
+  const pizzaId = req.params.id;
+  
+  try {
+    // קבלת נתוני הפיצה למחיקת התמונה
+    const [pizza] = await db.execute('SELECT image_url FROM pizzas WHERE id = ?', [pizzaId]);
+    
+    // מחיקת הפיצה (הרכיבים יימחקו אוטומטית בגלל CASCADE)
+    const [result] = await db.execute('DELETE FROM pizzas WHERE id = ?', [pizzaId]);
+    
+    // מחיקת קובץ התמונה
+    if (pizza[0]?.image_url) {
+      const imagePath = path.join(__dirname, '..', pizza[0].image_url);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+    
     res.json({ success: true });
   } catch (error) {
     console.error('Error deleting pizza:', error);
