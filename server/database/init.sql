@@ -56,3 +56,10 @@ CREATE TABLE IF NOT EXISTS inventory (
   min_stock DECIMAL(6,2)
 );
 
+-- CREATE TABLE IF NOT EXISTS pizza_ingredients (
+--   `id` int(11) NOT NULL,
+--   `pizza_id` int(11) NOT NULL,
+--   `inventory_id` int(11) NOT NULL,
+--   `quantity_needed` decimal(8,2) NOT NULL DEFAULT 1.00,
+--   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+-- );

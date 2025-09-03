@@ -14,7 +14,7 @@ const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCar
     const token = localStorage.getItem('token');
     console.log('טוקן נשלח:', token);
     if (!token) {
-      alert('את צריכה להתחבר כדי לבצע הזמנה');
+      alert('צריך להתחבר כדי לבצע הזמנה');
       return;
     }
 
@@ -118,6 +118,8 @@ const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCar
               onChange={(e) => setOrderDetails({...orderDetails, phone: e.target.value})}
               required
               placeholder="050-1234567"
+              pattern="^[0-9]{10}$"
+              title="מספר טלפון חייב להכיל 10 ספרות"
             />
           </div>
 

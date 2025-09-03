@@ -6,7 +6,7 @@ const pool = mysql.createPool({
   user: 'admin',
   password: 'admin',
   database: 'PizzaShopDB',
-  port: 3306, // אפשר לשנות אם צריך
+  port: 3306, 
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0

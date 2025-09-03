@@ -96,7 +96,7 @@ router.get('/daily-revenue', authenticateToken, requireEmployee, async (req, res
         COUNT(*) as orders,
         COALESCE(SUM(total_price), 0) as revenue
       FROM orders 
-      WHERE DATE(order_time) >= DATE_SUB(CURDATE(), INTERVAL 7 DAYS)
+      WHERE DATE(order_time) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
       GROUP BY DATE(order_time)
       ORDER BY date DESC
     `);
