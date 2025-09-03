@@ -3,14 +3,19 @@ import React, { useEffect, useState } from 'react';
 const MenuView = ({ onAddToCart }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('הכל');
-  const [toastMessage, setToastMessage] = useState('');
-  const [showToast, setShowToast] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/menu')
       .then(res => res.json())
-      .then(data => setMenuItems(data))
-      .catch(err => console.error('שגיאה בקבלת תפריט:', err));
+      .then(data => {
+        setMenuItems(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('שגיאה בקבלת תפריט:', err);
+        setLoading(false);
+      });
   }, []);
 
   const categories = ['הכל', 'פיצות', 'שתייה', 'תוספות'];
@@ -29,32 +34,16 @@ const MenuView = ({ onAddToCart }) => {
     return '';
   };
 
-  const showToastMessage = (message, duration = 3000) => {
-    setToastMessage(message);
-    setShowToast(true);
-    
-    setTimeout(() => {
-      setShowToast(false);
-    }, duration);
+  const handleImageError = (e) => {
+    e.target.style.display = 'none';
   };
 
-  const handleAddToCart = (item) => {
-    onAddToCart(item);
-    showToastMessage(`${item.name} נוסף לסל בהצלחה!`);
-  };
+  if (loading) {
+    return <div className="loading">טוען תפריט...</div>;
+  }
 
   return (
     <div className="menu-view">
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="toast-notification">
-          <div className="toast-content">
-            <span className="toast-icon">✅</span>
-            <span className="toast-message">{toastMessage}</span>
-          </div>
-        </div>
-      )}
-
       <div className="category-filters">
         {categories.map(category => (
           <button
@@ -76,9 +65,31 @@ const MenuView = ({ onAddToCart }) => {
             
             return (
               <div key={item.id} className={`menu-item-card ${!available ? 'unavailable' : ''}`}>
+                {/* תמונת המנה */}
+                <div className="menu-item-image">
+                  {item.image_url ? (
+                    <img 
+                      src={`http://localhost:5000${item.image_url}`} 
+                      alt={item.name}
+                      onError={handleImageError}
+                    />
+                  ) : (
+                    <div className="no-image-placeholder">
+                      <span>🍕</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="item-details">
                   <h3>{item.name}</h3>
-                  <p className="item-description">{item.description}</p>
+                  
+                  {item.description && (
+                    <p className="item-description">{item.description}</p>
+                  )}
+
+                  <div className="item-category-tag">
+                    {item.category}
+                  </div>
                   
                   {!available && (
                     <div className="availability-notice">
@@ -90,7 +101,7 @@ const MenuView = ({ onAddToCart }) => {
                     <span className="item-price">₪{item.price}</span>
                     <button 
                       className={`add-to-cart-btn ${!available ? 'disabled' : ''}`}
-                      onClick={() => available && handleAddToCart(item)}
+                      onClick={() => available && onAddToCart(item)}
                       disabled={!available}
                     >
                       {available ? 'הוסף לסל' : 'לא זמין'}
@@ -103,7 +114,10 @@ const MenuView = ({ onAddToCart }) => {
         }
 
         {filteredItems.length === 0 && (
-          <p>לא נמצאו מנות זמינות בקטגוריה זו</p>
+          <div className="no-items-message">
+            <h3>לא נמצאו מנות זמינות בקטגוריה זו</h3>
+            <p>נסה לבחור קטגוריה אחרת או חזור מאוחר יותר</p>
+          </div>
         )}
       </div>
     </div>

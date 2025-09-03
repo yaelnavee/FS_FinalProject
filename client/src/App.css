@@ -2238,3 +2238,419 @@ body {
   width: 200px;
   height: 200px;
 }
+
+.menu-view {
+  padding: 20px 0;
+}
+
+/* פילטרי קטגוריות */
+.category-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 0 20px;
+}
+
+.category-btn {
+  background: white;
+  border: 2px solid #e9ecef;
+  padding: 10px 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  font-size: 14px;
+  color: #495057;
+}
+
+.category-btn:hover {
+  border-color: #e74c3c;
+  color: #e74c3c;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+}
+
+.category-btn.active {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  border-color: #e74c3c;
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+/* רשת המנות */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 25px;
+  padding: 0 20px;
+}
+
+/* כרטיסי מנות */
+.menu-item-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.menu-item-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+  border-color: #e74c3c;
+}
+
+/* תמונת המנה */
+.menu-item-image {
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+.menu-item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.menu-item-card:hover .menu-item-image img {
+  transform: scale(1.08);
+}
+
+/* פלייסהולדר לתמונות */
+.no-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  font-size: 4rem;
+  color: #e74c3c;
+}
+
+.no-image-placeholder::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, transparent 30%, rgba(231, 76, 60, 0.1) 70%);
+}
+
+/* פרטי המנה */
+.item-details {
+  padding: 20px;
+  position: relative;
+}
+
+.item-details h3 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.item-description {
+  color: #6c757d;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.item-category-tag {
+  display: inline-block;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 15px;
+}
+
+/* רגל הכרטיס */
+.item-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  gap: 15px;
+}
+
+.item-price {
+  font-weight: 800;
+  font-size: 24px;
+  color: #27ae60;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.add-to-cart-btn {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  min-width: 120px;
+}
+
+.add-to-cart-btn::before {
+  content: "🛒 ";
+  margin-right: 5px;
+}
+
+.add-to-cart-btn:hover {
+  background: linear-gradient(135deg, #c0392b, #a93226);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.add-to-cart-btn.disabled {
+  background: linear-gradient(135deg, #6c757d, #5a6268);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.add-to-cart-btn.disabled::before {
+  content: "❌ ";
+}
+
+.add-to-cart-btn.disabled:hover {
+  transform: none;
+  box-shadow: none;
+  background: linear-gradient(135deg, #6c757d, #5a6268);
+}
+
+/* הודעת זמינות */
+.availability-notice {
+  background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+  color: #721c24;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-align: center;
+  border: 1px solid #f5c6cb;
+}
+
+/* מנות לא זמינות */
+.menu-item-card.unavailable {
+  opacity: 0.6;
+  position: relative;
+}
+
+.menu-item-card.unavailable::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(108, 117, 125, 0.4);
+  z-index: 10;
+  border-radius: 16px;
+}
+
+.menu-item-card.unavailable::after {
+  content: "לא זמין";
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(220, 53, 69, 0.9);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  z-index: 11;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* הודעה כשאין מנות */
+.no-items-message {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+}
+
+.no-items-message h3 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+  font-size: 24px;
+}
+
+.no-items-message p {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* אפקט הריחוף המתקדם */
+.menu-item-card::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef, #dee2e6);
+  border-radius: 16px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.menu-item-card:hover::before {
+  opacity: 1;
+}
+
+/* רספונסיבי */
+@media (max-width: 1200px) {
+  .menu-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .menu-view {
+    padding: 15px 0;
+  }
+  
+  .category-filters {
+    padding: 0 15px;
+    gap: 8px;
+  }
+  
+  .category-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  .menu-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 0 15px;
+  }
+  
+  .menu-item-image {
+    height: 200px;
+  }
+  
+  .item-details {
+    padding: 16px;
+  }
+  
+  .item-details h3 {
+    font-size: 18px;
+  }
+  
+  .item-price {
+    font-size: 20px;
+  }
+  
+  .add-to-cart-btn {
+    padding: 10px 16px;
+    font-size: 13px;
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .category-filters {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .category-btn {
+    width: 100%;
+    max-width: 200px;
+    text-align: center;
+  }
+  
+  .menu-item-image {
+    height: 180px;
+  }
+  
+  .item-footer {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .add-to-cart-btn {
+    width: 100%;
+  }
+}
+
+/* אנימציות */
+@keyframes menuItemAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menu-item-card {
+  animation: menuItemAppear 0.5s ease-out;
+}
+
+.menu-item-card:nth-child(1) { animation-delay: 0.1s; }
+.menu-item-card:nth-child(2) { animation-delay: 0.2s; }
+.menu-item-card:nth-child(3) { animation-delay: 0.3s; }
+.menu-item-card:nth-child(4) { animation-delay: 0.4s; }
+.menu-item-card:nth-child(5) { animation-delay: 0.5s; }
+.menu-item-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* אפקט טעינה */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  font-size: 18px;
+  color: #6c757d;
+}
+
+.loading::after {
+  content: "";
+  width: 30px;
+  height: 30px;
+  border: 3px solid #e74c3c;
+  border-top: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
