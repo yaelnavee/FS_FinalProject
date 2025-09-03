@@ -45,7 +45,7 @@ const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCar
               זמן הכנה משוער: 30-40 דקות`); 
         onClearCart();
         setShowCheckout(false);
-        setOrderDetails(data.orderDetails);
+        setOrderDetails({ phone: '', address: '', notes: '' });
       } else {
         const errorData = await response.json();
         alert('שגיאה בשליחת ההזמנה: ' + errorData.message);
@@ -54,6 +54,11 @@ const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCar
       console.error('Order error:', err);
       alert('הייתה שגיאה בשליחת ההזמנה');
     }
+  };
+
+  const handleImageError = (e) => {
+    e.target.style.display = 'none';
+    e.target.nextSibling.style.display = 'flex';
   };
 
   if (cart.length === 0) {
@@ -73,8 +78,30 @@ const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCar
         <div className="order-summary">
           <h4>סיכום הזמנה:</h4>
           {cart.map(item => (
-            <div key={item.id} className="order-item">
-              {item.name} x{item.quantity} - ₪{item.price * item.quantity}
+            <div key={item.id} className="checkout-order-item">
+              <div className="checkout-item-image">
+                {item.image_url ? (
+                  <>
+                    <img 
+                      src={`http://localhost:5000${item.image_url}`} 
+                      alt={item.name}
+                      onError={handleImageError}
+                    />
+                    <div className="checkout-image-placeholder" style={{display: 'none'}}>
+                      🍕
+                    </div>
+                  </>
+                ) : (
+                  <div className="checkout-image-placeholder">
+                    🍕
+                  </div>
+                )}
+              </div>
+              <div className="checkout-item-details">
+                <span className="checkout-item-name">{item.name}</span>
+                <span className="checkout-item-quantity">x{item.quantity}</span>
+                <span className="checkout-item-price">₪{item.price * item.quantity}</span>
+              </div>
             </div>
           ))}
           <div className="order-total">
@@ -140,7 +167,24 @@ const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCar
         {cart.map(item => (
           <div key={item.id} className="cart-item">
             <div className="item-info">
-              <span className="item-image">{item.image}</span>
+              <div className="cart-item-image">
+                {item.image_url ? (
+                  <>
+                    <img 
+                      src={`http://localhost:5000${item.image_url}`} 
+                      alt={item.name}
+                      onError={handleImageError}
+                    />
+                    <div className="cart-image-placeholder" style={{display: 'none'}}>
+                      🍕
+                    </div>
+                  </>
+                ) : (
+                  <div className="cart-image-placeholder">
+                    🍕
+                  </div>
+                )}
+              </div>
               <div className="item-details">
                 <h4>{item.name}</h4>
                 <span className="item-price">₪{item.price}</span>
@@ -148,11 +192,17 @@ const CartView = ({ cart, onUpdateQuantity, onRemoveItem, totalPrice, onClearCar
             </div>
             
             <div className="quantity-controls">
-              <button onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}>
+              <button 
+                onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                className="quantity-btn"
+              >
                 -
               </button>
               <span className="quantity">{item.quantity}</span>
-              <button onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}>
+              <button 
+                onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                className="quantity-btn"
+              >
                 +
               </button>
             </div>
