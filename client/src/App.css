@@ -1658,7 +1658,6 @@ body {
   transform: none;
 }
 
-/* סטיילינג מעודכן לניהול מלאי */
 .inventory-item.critical-stock {
   border-left: 4px solid #dc3545;
   background-color: #fff5f5;
