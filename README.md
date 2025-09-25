@@ -33,9 +33,11 @@ The system supports two user roles: **Customer** and **Employee**, each with ded
 
 ## 📂 Project Structure
 ```
-project-root/
-│── client/          # React frontend
-│── server/          # Express backend (MVC)
-│── database/        # MySQL schema & scripts
-│── README.md        # Project documentation
+│── client/ # React frontend
+│── server/ # Express backend
+  └── controllers/ # Application controllers (business logic)
+  └── database/ # Database schema and queries
+  └── middleware/ # Authentication and other middleware
+  └── routes/ # API routes
+  └── db.js # Database connection
 ```
